@@ -218,7 +218,7 @@ namespace MCSharpClient
                     return false;
                 }
 
-                if (CheckServer())
+                if (!CheckServer())
                 {
                     Debug.Severe(new MinecraftClientConnectException("Name verification failed. How you managed this, I don't even know..."));
                     return false;
@@ -264,5 +264,9 @@ namespace MCSharpClient
             }
         }
 
+        public MinecraftServer GetServer()
+        {
+            return this.Server;
+        }
     }
 }

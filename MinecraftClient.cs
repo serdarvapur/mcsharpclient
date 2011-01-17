@@ -44,8 +44,10 @@ namespace MCSharpClient
         private String SessionID;
         private Boolean Private_Connected;
 
-        public delegate void MinecraftClientEventHandler(object sender, MinecraftClientConnectEventArgs args);
-        public event MinecraftClientEventHandler ConnectedToServer, DisconnectedFromServer;
+        public delegate void MinecraftClientConnectEventHandler(object sender, MinecraftClientConnectEventArgs args);
+        public delegate void MinecraftClientChatEventHandler(object sender, MinecraftClientChatEventArgs args);
+        public event MinecraftClientConnectEventHandler ConnectedToServer, DisconnectedFromServer;
+        public event MinecraftClientChatEventHandler ChatMessageReceived;
         
         /// <summary>
         ///  Instantiates a new MinecraftClient object. If the server is running in online mode, Username and Password must be valid Minecraft.net account credentials.
@@ -112,7 +114,17 @@ namespace MCSharpClient
                         switch (id)
                         {
 
-                            case 0x03: StreamHelper.ReadString(Stream); break;
+                            case 0x03: //Chat
+                                try
+                                {
+                                    String s = StreamHelper.ReadString(Stream);
+                                    if (s[0] != '<') break;
+                                    String user = s.Substring(1, s.IndexOf(">") - 1);
+                                    String msg = s.Replace("<" + user + "> ", "");
+                                    OnChatMessageReceived(this, new MinecraftClientChatEventArgs(user, msg));
+                                }
+                                catch (IndexOutOfRangeException e) { }
+                                break;
                             case 0x04: StreamHelper.ReadBytes(Stream, 8); break;
                             case 0x05: StreamHelper.ReadBytes(Stream, 10); break;
                             case 0x06: StreamHelper.ReadBytes(Stream, 12); break;
@@ -161,7 +173,7 @@ namespace MCSharpClient
                             default: break;
                         }
                     }
-                    catch (Exception e) { }
+                    catch (Exception e) { Debug.Warning(e); }
                 }
             }
             catch (Exception e) { Debug.Severe(new MinecraftClientGeneralException(e)); }
@@ -201,51 +213,55 @@ namespace MCSharpClient
 
         private Boolean SendInitialPackets()
         {
-            //handshake (client)
-            this.Stream.WriteByte(0x02);
-            StreamHelper.WriteString(Stream, this.Username);
-            this.Stream.Flush();
-
-            //handshake (server)
-            this.Stream.ReadByte();
-            this.Server.Hash = StreamHelper.ReadString(Stream); //hash
-
-            if (this.Server.Hash != "-" && this.Server.Hash != "+")
+            try
             {
-                if (this.SessionID == "")
+                //handshake (client)
+                this.Stream.WriteByte(0x02);
+                StreamHelper.WriteString(Stream, this.Username);
+                this.Stream.Flush();
+
+                //handshake (server)
+                this.Stream.ReadByte();
+                this.Server.Hash = StreamHelper.ReadString(Stream); //hash
+
+                if (this.Server.Hash != "-" && this.Server.Hash != "+")
                 {
-                    Debug.Severe(new MinecraftClientConnectException("Server requires authenication but it was not enabled."));
-                    return false;
+                    if (this.SessionID == "")
+                    {
+                        Debug.Severe(new MinecraftClientConnectException("Server requires authenication but it was not enabled."));
+                        return false;
+                    }
+
+                    if (!CheckServer())
+                    {
+                        Debug.Severe(new MinecraftClientConnectException("Name verification failed. How you managed this, I don't even know..."));
+                        return false;
+                    }
                 }
 
-                if (!CheckServer())
-                {
-                    Debug.Severe(new MinecraftClientConnectException("Name verification failed. How you managed this, I don't even know..."));
-                    return false;
-                }
+                //login (client)
+                this.Stream.WriteByte(0x01);
+                StreamHelper.WriteInt(this.Stream, 8); //version
+                StreamHelper.WriteString(this.Stream, this.Username); //username
+                StreamHelper.WriteString(this.Stream, this.Server.Password); //server password
+                StreamHelper.WriteLong(this.Stream, 0L); //not used
+                this.Stream.WriteByte(0x00); //not used
+                this.Stream.Flush();
+
+                //login (server)
+                this.Stream.ReadByte();
+                this.EntityID = StreamHelper.ReadInt(this.Stream); //entity id
+                this.Server.ServerName = StreamHelper.ReadString(this.Stream); //server name
+                this.Server.ServerMOTD = StreamHelper.ReadString(this.Stream); //motd
+                this.Server.MapSeed = StreamHelper.ReadLong(this.Stream); //map seed
+                this.Stream.ReadByte(); //dimension
+
+                this.Stream.WriteByte(0x00);
+                this.Stream.Flush();
+
+                return true;
             }
-
-            //login (client)
-            this.Stream.WriteByte(0x01);
-            StreamHelper.WriteInt(this.Stream, 8); //version
-            StreamHelper.WriteString(this.Stream, this.Username); //username
-            StreamHelper.WriteString(this.Stream, this.Server.Password); //server password
-            StreamHelper.WriteLong(this.Stream, 0L); //not used
-            this.Stream.WriteByte(0x00); //not used
-            this.Stream.Flush();
-
-            //login (server)
-            this.Stream.ReadByte();
-            this.EntityID = StreamHelper.ReadInt(this.Stream); //entity id
-            this.Server.ServerName = StreamHelper.ReadString(this.Stream); //server name
-            this.Server.ServerMOTD = StreamHelper.ReadString(this.Stream); //motd
-            this.Server.MapSeed = StreamHelper.ReadLong(this.Stream); //map seed
-            this.Stream.ReadByte(); //dimension
-
-            this.Stream.WriteByte(0x00);
-            this.Stream.Flush();
-
-            return true;
+            catch (Exception e) { Debug.Severe(e); return false; }
         }
 
         protected void OnConnectedToServer(object sender, MinecraftClientConnectEventArgs args)
@@ -261,6 +277,14 @@ namespace MCSharpClient
             if (DisconnectedFromServer != null)
             {
                DisconnectedFromServer(sender, args);
+            }
+        }
+
+        protected void OnChatMessageReceived(object sender, MinecraftClientChatEventArgs args)
+        {
+            if (DisconnectedFromServer != null)
+            {
+                ChatMessageReceived(this, new MinecraftClientChatEventArgs(args.User, args.Message));
             }
         }
 

@@ -47,7 +47,8 @@ namespace MCSharpClient
             a[0] = (byte)s.ReadByte();
             a[1] = (byte)s.ReadByte();
             len = IPAddress.HostToNetworkOrder(BitConverter.ToInt16(a, 0));
-            if (len > 100) return "";
+            if (len > 100) len = 100; //Shouldn't even be this high in the first place.
+            if (len < 0) len = 0; //What the hell even happened?
 
             byte[] b = new byte[len];
             for (int i = 0; i < len; i++)

@@ -7,7 +7,7 @@ using System.Net.Sockets;
 using System.IO;
 using System.Threading;
 
-namespace MCClientSharp
+namespace MCSharpClient
 {
     public class MinecraftClient
     {

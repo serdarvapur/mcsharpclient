@@ -39,15 +39,43 @@ namespace MCSharpClient
                 }
             }
         }
+        public Location PlayerLocation
+        {
+            get
+            {
+                return Private_PlayerLocation;
+            }
+            set 
+            {
+                Private_PlayerLocation = value;
+                OnPlayerLocationChanged(this, new MinecraftClientLocationEventArgs(value));
+            }
+        }
+        public Rotation PlayerRotation
+        {
+            get
+            {
+                return Private_PlayerRotation;
+            }
+            set
+            {
+                Private_PlayerRotation = value;
+                //OnPlayerRotationChanged(this, new MinecraftClientLocationEventArgs(value));
+            }
+        }
 
         private int EntityID;
         private String SessionID;
-        private Boolean Private_Connected;
+        private Location Private_PlayerLocation;
+        private Rotation Private_PlayerRotation;
+        private Boolean Private_Connected, OnGround;
 
         public delegate void MinecraftClientConnectEventHandler(object sender, MinecraftClientConnectEventArgs args);
         public delegate void MinecraftClientChatEventHandler(object sender, MinecraftClientChatEventArgs args);
+        public delegate void MinecraftClientLocationEventHandler(object sender, MinecraftClientLocationEventArgs args);
         public event MinecraftClientConnectEventHandler ConnectedToServer, DisconnectedFromServer;
         public event MinecraftClientChatEventHandler ChatMessageReceived;
+        public event MinecraftClientLocationEventHandler PlayerLocationChanged;
         
         /// <summary>
         ///  Instantiates a new MinecraftClient object. If the server is running in online mode, Username and Password must be valid Minecraft.net account credentials.
@@ -97,6 +125,8 @@ namespace MCSharpClient
             }
 
             this.Connected = true;
+            this.PlayerLocation = new Location(0D, 0D, 0D, 0D + 1.65);
+            this.PlayerRotation = new Rotation(0F, 0F);
 
             new Thread(HandleData).Start();
         }
@@ -113,7 +143,9 @@ namespace MCSharpClient
                     {
                         switch (id)
                         {
-
+                            case 0x00: //Ping
+                                Stream.WriteByte(0x00);
+                                break;
                             case 0x03: //Chat
                                 try
                                 {
@@ -125,7 +157,9 @@ namespace MCSharpClient
                                 }
                                 catch (IndexOutOfRangeException e) { }
                                 break;
-                            case 0x04: StreamHelper.ReadBytes(Stream, 8); break;
+                            case 0x04:
+                                this.Server.Time = StreamHelper.ReadLong(Stream);
+                                break;
                             case 0x05: StreamHelper.ReadBytes(Stream, 10); break;
                             case 0x06: StreamHelper.ReadBytes(Stream, 12); break;
                             case 0x07: StreamHelper.ReadBytes(Stream, 9); break;
@@ -134,33 +168,91 @@ namespace MCSharpClient
                             case 0x0A: StreamHelper.ReadBytes(Stream, 1); break;
                             case 0x0B: StreamHelper.ReadBytes(Stream, 33); break;
                             case 0x0C: StreamHelper.ReadBytes(Stream, 9); break;
-                            case 0x0D: StreamHelper.ReadBytes(Stream, 41); break;
+                            case 0x0D:
+                                this.PlayerLocation.X = StreamHelper.ReadDouble(Stream);
+                                this.PlayerLocation.Y = StreamHelper.ReadDouble(Stream);
+                                this.PlayerLocation.Stance = StreamHelper.ReadDouble(Stream);
+                                this.PlayerLocation.Z = StreamHelper.ReadDouble(Stream);
+                                this.PlayerRotation.Pitch = StreamHelper.ReadFloat(Stream);
+                                this.PlayerRotation.Yaw = StreamHelper.ReadFloat(Stream);
+                                this.OnGround = StreamHelper.ReadBoolean(Stream);
+                                OnPlayerLocationChanged(this, new MinecraftClientLocationEventArgs(this.PlayerLocation));
+                                break;
                             case 0x0E: StreamHelper.ReadBytes(Stream, 11); break;
-                            case 0x0F: StreamHelper.ReadBytes(Stream, 12); break;
+                            case 0x0F:
+                                StreamHelper.ReadInt(Stream);
+                                StreamHelper.ReadBytes(Stream, 1);
+                                StreamHelper.ReadInt(Stream);
+                                StreamHelper.ReadBytes(Stream, 1);
+                                short itemid = StreamHelper.ReadShort(Stream);
+                                if (itemid > 0)
+                                {
+                                    byte amount = StreamHelper.ReadBytes(Stream, 1)[0];
+                                    short damage = StreamHelper.ReadShort(Stream);
+                                }
+                                break;
                             case 0x10: StreamHelper.ReadBytes(Stream, 2); break;
-                            case 0x12: StreamHelper.ReadBytes(Stream, 6); break;
+                            case 0x12: StreamHelper.ReadBytes(Stream, 5); break;
                             case 0x13: StreamHelper.ReadBytes(Stream, 5); break;
-                            //case 0x14: break;
+                            case 0x14:
+                                StreamHelper.ReadInt(Stream);
+                                StreamHelper.ReadString(Stream);
+                                StreamHelper.ReadInt(Stream);
+                                StreamHelper.ReadInt(Stream);
+                                StreamHelper.ReadInt(Stream);
+                                StreamHelper.ReadBytes(Stream, 2);
+                                StreamHelper.ReadShort(Stream);
+                                break;
                             case 0x15: StreamHelper.ReadBytes(Stream, 24); break;
                             case 0x16: StreamHelper.ReadBytes(Stream, 8); break;
                             case 0x17: StreamHelper.ReadBytes(Stream, 17); break;
-                            //case 0x18: break;
-                            //case 0x19: break;
+                            case 0x18: 
+                                StreamHelper.ReadBytes(Stream, 19);
+                                while ((id = (byte)Stream.ReadByte()) != 0x7f) { } //Metadata
+                                break;
+                            case 0x19:
+                                StreamHelper.ReadInt(Stream);
+                                StreamHelper.ReadString(Stream);
+                                StreamHelper.ReadInt(Stream);
+                                StreamHelper.ReadInt(Stream);
+                                StreamHelper.ReadInt(Stream);
+                                StreamHelper.ReadInt(Stream);
+                                break;
                             case 0x1C: StreamHelper.ReadBytes(Stream, 10); break;
                             case 0x1D: StreamHelper.ReadBytes(Stream, 4); break;
                             case 0x1E: StreamHelper.ReadBytes(Stream, 4); break;
                             case 0x1F: StreamHelper.ReadBytes(Stream, 7); break;
                             case 0x20: StreamHelper.ReadBytes(Stream, 6); break;
                             case 0x21: StreamHelper.ReadBytes(Stream, 9); break;
-                            case 0x22:
+                            case 0x22: StreamHelper.ReadBytes(Stream, 18); break;
                             case 0x26: StreamHelper.ReadBytes(Stream, 5); break;
                             case 0x27: StreamHelper.ReadBytes(Stream, 8); break;
-                            //case 0x28: break;
+                            case 0x28:
+                                StreamHelper.ReadInt(Stream);
+                                while ((id = (byte)Stream.ReadByte()) != 0x7f) { } //Metadata
+                                break;
                             case 0x32: StreamHelper.ReadBytes(Stream, 9); break;
-                            case 0x33: StreamHelper.ReadBytes(Stream, 17); break;
-                            case 0x34: StreamHelper.ReadBytes(Stream, 10); break;
+                            case 0x33: 
+                                StreamHelper.ReadBytes(Stream, 13);
+                                int size = StreamHelper.ReadInt(Stream);
+                                StreamHelper.ReadBytes(Stream, size);
+                                break;
+                            case 0x34:
+                                StreamHelper.ReadInt(Stream);
+                                StreamHelper.ReadInt(Stream);
+                                short length = StreamHelper.ReadShort(Stream); //byte array length
+                                StreamHelper.ReadBytes(Stream, length * 2); //3 byte arrays
+                                while ((id = (byte)Stream.ReadByte()) != 0x7f) { } //Metadata
+                                break;
                             case 0x35: StreamHelper.ReadBytes(Stream, 11); break;
-                            case 0x3C: StreamHelper.ReadBytes(Stream, 32); break;
+                            case 0x3C:
+                                StreamHelper.ReadDouble(Stream);
+                                StreamHelper.ReadDouble(Stream);
+                                StreamHelper.ReadDouble(Stream);
+                                StreamHelper.ReadFloat(Stream);
+                                int count = StreamHelper.ReadInt(Stream);
+                                StreamHelper.ReadBytes(Stream, count * 3);
+                                break;
                             case 0x64: StreamHelper.ReadBytes(Stream, 3); break;
                             case 0x65: StreamHelper.ReadBytes(Stream, 1); break;
                             case 0x66: StreamHelper.ReadBytes(Stream, 8); break;
@@ -168,9 +260,22 @@ namespace MCSharpClient
                             case 0x68: StreamHelper.ReadBytes(Stream, 3); break;
                             case 0x69: StreamHelper.ReadBytes(Stream, 5); break;
                             case 0x6A: StreamHelper.ReadBytes(Stream, 4); break;
-                            case 0x82: StreamHelper.ReadBytes(Stream, 10); break;
-                            case 0xFF: break;
-                            default: break;
+                            case 0x82:
+                                StreamHelper.ReadInt(Stream);
+                                StreamHelper.ReadShort(Stream);
+                                StreamHelper.ReadInt(Stream);
+                                StreamHelper.ReadString(Stream);
+                                StreamHelper.ReadString(Stream);
+                                StreamHelper.ReadString(Stream);
+                                break;
+                            case 0xFF:
+                                String reason = StreamHelper.ReadString(Stream);
+                                if (reason.Length < 5) break;
+                                Debug.Warning("Received disconnect packet. Reason: " + reason);
+                                break;
+                            default:
+                                //Debug.Warning("Unknown packet received. [" + (int)id + "]");
+                                break;
                         }
                     }
                     catch (Exception e) { Debug.Warning(e); }
@@ -286,6 +391,20 @@ namespace MCSharpClient
             {
                 ChatMessageReceived(this, new MinecraftClientChatEventArgs(args.User, args.Message));
             }
+        }
+
+        protected void OnPlayerLocationChanged(object sender, MinecraftClientLocationEventArgs args)
+        {
+            if (PlayerLocationChanged != null)
+            {
+                PlayerLocationChanged(sender, args);
+            }
+        }
+
+        public void SetPlayerLocation(Location PlayerLocation) //Currently does nothing
+        {
+            this.PlayerLocation = PlayerLocation;
+            OnPlayerLocationChanged(this, new MinecraftClientLocationEventArgs(this.PlayerLocation));
         }
 
         public MinecraftServer GetServer()

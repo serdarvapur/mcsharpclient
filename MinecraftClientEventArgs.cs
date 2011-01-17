@@ -17,13 +17,24 @@ namespace MCSharpClient
 
     public class MinecraftClientChatEventArgs : EventArgs
     {
-
         public String User, Message;
 
-        public MinecraftClientChatEventArgs(String User, String Message) : base() 
+        public MinecraftClientChatEventArgs(String User, String Message)
+            : base()
         {
             this.User = User;
             this.Message = Message;
+        }
+    }
+
+    public class MinecraftClientLocationEventArgs : EventArgs
+    {
+        public Location PlayerLocation;
+
+        public MinecraftClientLocationEventArgs(Location PlayerLocation)
+            : base()
+        {
+            this.PlayerLocation = PlayerLocation;
         }
     }
 }

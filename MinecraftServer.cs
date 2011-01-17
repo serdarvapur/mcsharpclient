@@ -14,12 +14,14 @@ namespace MCSharpClient
 
         public IPEndPoint ServerAddress;
         public String ServerName, ServerMOTD, Password, Hash;
-        public long MapSeed;
+        public long MapSeed, Time;
 
         public MinecraftServer(Socket socket)
         {
             this.Socket = socket;
             this.ServerAddress = (IPEndPoint)this.Socket.RemoteEndPoint;
+            this.ServerName = this.ServerMOTD = this.Password = this.Hash = "";
+            this.MapSeed = this.Time = 0L;
         }
     }
 }

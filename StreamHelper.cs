@@ -35,6 +35,11 @@ namespace MCSharpClient
             return new BinaryReader(s).ReadSingle();
         }
 
+        public static Boolean ReadBoolean(Stream s)
+        {
+            return new BinaryReader(s).ReadBoolean();
+        }
+        
         public static byte[] ReadBytes(Stream s, int count)
         {
             return new BinaryReader(s).ReadBytes(count);
@@ -94,6 +99,11 @@ namespace MCSharpClient
         public static void WriteFloat(Stream s, float f)
         {
             new BinaryWriter(s).Write(f);
+        }
+
+        public static void ReadBoolean(Stream s, Boolean b)
+        {
+            new BinaryWriter(s).Write(b);
         }
 
         public static void WriteBytes(Stream s, byte[] b)

@@ -249,9 +249,10 @@ namespace MCSharpClient
                             case 0x34:
                                 StreamHelper.ReadInt(Stream);
                                 StreamHelper.ReadInt(Stream);
-                                short length = StreamHelper.ReadShort(Stream); //byte array length
-                                StreamHelper.ReadBytes(Stream, length * 2); //3 byte arrays
-                                for (int i = 0; i < length; i++) //Block Data
+                                short length = StreamHelper.ReadShort(Stream); //Number of elements per array
+                                StreamHelper.ReadBytes(Stream, length * 2); //Short array (coordinates)
+                                StreamHelper.ReadBytes(Stream, length); //Byte array (types)
+                                for (int i = 0; i < length; i++) //Metadata array
                                 {
                                     StreamHelper.ReadShort(Stream);
                                     Stream.ReadByte();

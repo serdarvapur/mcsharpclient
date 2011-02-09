@@ -132,7 +132,7 @@ namespace MCSharpClient
 
         private void HandleData()
         {
-            byte id;
+            byte id, oldid = 0x00;
             double x, y, z, stance;
 
             try
@@ -162,10 +162,9 @@ namespace MCSharpClient
                                 break;
                             case 0x05: StreamHelper.ReadBytes(Stream, 10); break;
                             case 0x06:
-                                
-                                x = StreamHelper.ReadDouble(Stream);
-                                y = StreamHelper.ReadDouble(Stream);
-                                z = StreamHelper.ReadDouble(Stream);
+                                x = StreamHelper.ReadInt(Stream);
+                                y = StreamHelper.ReadInt(Stream);
+                                z = StreamHelper.ReadInt(Stream);
                                 stance = y + 1.6;
                                 this.PlayerLocation = new Location(x, y, z, stance);
                                 break;
@@ -215,7 +214,7 @@ namespace MCSharpClient
                             case 0x15: StreamHelper.ReadBytes(Stream, 24); break;
                             case 0x16: StreamHelper.ReadBytes(Stream, 8); break;
                             case 0x17: StreamHelper.ReadBytes(Stream, 17); break;
-                            case 0x18: 
+                            case 0x18: //
                                 StreamHelper.ReadBytes(Stream, 19);
                                 while ((id = (byte)Stream.ReadByte()) != 0x7f) { } //Metadata
                                 break;
@@ -292,6 +291,7 @@ namespace MCSharpClient
                                 //Debug.Warning("Unknown packet received. [" + (int)id + "]");
                                 break;
                         }
+                        oldid = id;
                     }
                     catch (Exception e) { Debug.Warning(e); }
                 }

@@ -125,8 +125,7 @@ namespace MCSharpClient
             }
 
             this.Connected = true;
-            this.PlayerLocation = new Location(0D, 0D, 0D, 0D + 1.65);
-            this.PlayerRotation = new Rotation(0F, 0F);
+            this.PlayerLocation = null;
 
             new Thread(HandleData).Start();
         }
@@ -134,6 +133,7 @@ namespace MCSharpClient
         private void HandleData()
         {
             byte id;
+            double x, y, z, stance;
 
             try
             {
@@ -161,7 +161,14 @@ namespace MCSharpClient
                                 this.Server.Time = StreamHelper.ReadLong(Stream);
                                 break;
                             case 0x05: StreamHelper.ReadBytes(Stream, 10); break;
-                            case 0x06: StreamHelper.ReadBytes(Stream, 12); break;
+                            case 0x06:
+                                
+                                x = StreamHelper.ReadDouble(Stream);
+                                y = StreamHelper.ReadDouble(Stream);
+                                z = StreamHelper.ReadDouble(Stream);
+                                stance = y + 1.6;
+                                this.PlayerLocation = new Location(x, y, z, stance);
+                                break;
                             case 0x07: StreamHelper.ReadBytes(Stream, 9); break;
                             case 0x08: StreamHelper.ReadBytes(Stream, 2); break;
                             case 0x09: break;
@@ -169,14 +176,16 @@ namespace MCSharpClient
                             case 0x0B: StreamHelper.ReadBytes(Stream, 33); break;
                             case 0x0C: StreamHelper.ReadBytes(Stream, 9); break;
                             case 0x0D:
-                                this.PlayerLocation.X = StreamHelper.ReadDouble(Stream);
-                                this.PlayerLocation.Y = StreamHelper.ReadDouble(Stream);
-                                this.PlayerLocation.Stance = StreamHelper.ReadDouble(Stream);
-                                this.PlayerLocation.Z = StreamHelper.ReadDouble(Stream);
-                                this.PlayerRotation.Pitch = StreamHelper.ReadFloat(Stream);
-                                this.PlayerRotation.Yaw = StreamHelper.ReadFloat(Stream);
+                                //Set Location
+                                float pitch, yaw;
+                                x = StreamHelper.ReadDouble(Stream);
+                                y = StreamHelper.ReadDouble(Stream);
+                                stance = StreamHelper.ReadDouble(Stream);
+                                z = StreamHelper.ReadDouble(Stream);
+                                pitch = StreamHelper.ReadFloat(Stream);
+                                yaw = StreamHelper.ReadFloat(Stream);
+                                this.PlayerLocation = new Location(x, y, z, stance);
                                 this.OnGround = StreamHelper.ReadBoolean(Stream);
-                                OnPlayerLocationChanged(this, new MinecraftClientLocationEventArgs(this.PlayerLocation));
                                 break;
                             case 0x0E: StreamHelper.ReadBytes(Stream, 11); break;
                             case 0x0F:
@@ -242,7 +251,12 @@ namespace MCSharpClient
                                 StreamHelper.ReadInt(Stream);
                                 short length = StreamHelper.ReadShort(Stream); //byte array length
                                 StreamHelper.ReadBytes(Stream, length * 2); //3 byte arrays
-                                while ((id = (byte)Stream.ReadByte()) != 0x7f) { } //Metadata
+                                for (int i = 0; i < length; i++) //Block Data
+                                {
+                                    StreamHelper.ReadShort(Stream);
+                                    Stream.ReadByte();
+                                    Stream.ReadByte();
+                                }
                                 break;
                             case 0x35: StreamHelper.ReadBytes(Stream, 11); break;
                             case 0x3C:
@@ -395,7 +409,7 @@ namespace MCSharpClient
 
         protected void OnPlayerLocationChanged(object sender, MinecraftClientLocationEventArgs args)
         {
-            if (PlayerLocationChanged != null)
+            if (PlayerLocationChanged != null && this.Connected)
             {
                 PlayerLocationChanged(sender, args);
             }

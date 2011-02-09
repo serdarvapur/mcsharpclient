@@ -101,7 +101,7 @@ namespace MCSharpClient
             new BinaryWriter(s).Write(f);
         }
 
-        public static void ReadBoolean(Stream s, Boolean b)
+        public static void WriteBoolean(Stream s, Boolean b)
         {
             new BinaryWriter(s).Write(b);
         }

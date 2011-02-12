@@ -98,7 +98,7 @@ namespace MCSharpClient
                 {
                     this.MainSocket.Connect(ServerAddress);
                 }
-                catch (Exception e) { Debug.Severe(e); }
+                catch (Exception e) { Debug.Severe(e.Message); }
             }
 
             this.Stream = new NetworkStream(MainSocket);
@@ -126,13 +126,13 @@ namespace MCSharpClient
 
             try
             {
-                while (MainSocket.Connected && (int)(id = (byte)Stream.ReadByte()) != -1)
+                while (MainSocket.Connected && (int)(id = (byte)Stream.ReadByte()) != 255)
                 {
                     try
                     {
                         PacketHandler.HandlePacket((PacketType)id);
                     }
-                    catch (Exception e) { Debug.Warning(e); }
+                    catch (Exception e) { Debug.Warning(e.Message); }
                 }
             }
             catch (Exception e) { Debug.Severe(new MinecraftClientGeneralException(e)); }
@@ -231,14 +231,14 @@ namespace MCSharpClient
                 try
                 {
                     this.MainSocket.Close();
-                    OnDisconnectedFromServer(this, new MinecraftClientDisconnectEventArgs(reason));
-                    Connected = false;
                 }
                 catch (Exception e)
                 {
-                    Debug.Warning(e);
+                    Debug.Warning(e.Message);
                 }
             }
+            OnDisconnectedFromServer(this, new MinecraftClientDisconnectEventArgs(reason));
+            Connected = false;
         }
 
         public void OnConnectedToServer(object sender, MinecraftClientConnectEventArgs args)

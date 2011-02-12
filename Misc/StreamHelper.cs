@@ -60,7 +60,7 @@ namespace MCSharpClient
             {
                 b[i] = (byte)s.ReadByte();
             }
-            return Encoding.ASCII.GetString(b);
+            return Encoding.UTF8.GetString(b);
         }
 
         public static void WriteString(Stream s, String msg)
@@ -68,7 +68,7 @@ namespace MCSharpClient
 
             short len = IPAddress.HostToNetworkOrder((short)msg.Length);
             byte[] a = BitConverter.GetBytes(len);
-            byte[] b = Encoding.Default.GetBytes(msg);
+            byte[] b = Encoding.UTF8.GetBytes(msg);
             byte[] c = a.Concat(b).ToArray();
             s.Write(c, 0, c.Length);
         }

@@ -144,6 +144,7 @@ namespace MCSharpClient
                 {
                     try
                     {
+                        // Debug.Info(((PacketType)id).ToString());
                         switch ((PacketType)id)
                         {
                             case PacketType.KeepAlive:
@@ -177,7 +178,8 @@ namespace MCSharpClient
                             // case PacketType.Player: StreamHelper.ReadBytes(Stream, 1); break; (Client->Server Only)
                             case PacketType.PlayerPosition: StreamHelper.ReadBytes(Stream, 33); break;
                             case PacketType.PlayerLook: StreamHelper.ReadBytes(Stream, 9); break;
-                            case PacketType.PlayerPositionLook:
+                            case PacketType.PlayerPositionLook: // Removed until I find a better solution. Causes way too much lag.
+                                /*
                                 float pitch, yaw;
                                 x = StreamHelper.ReadDouble(Stream);
                                 y = StreamHelper.ReadDouble(Stream);
@@ -187,6 +189,8 @@ namespace MCSharpClient
                                 yaw = StreamHelper.ReadFloat(Stream);
                                 this.PlayerLocation = new Location(x, y, z, stance);
                                 this.OnGround = StreamHelper.ReadBoolean(Stream);
+                                 * */
+                                StreamHelper.ReadBytes(Stream, 41);
                                 break;
                             case PacketType.PlayerDigging: StreamHelper.ReadBytes(Stream, 11); break;
                             case PacketType.PlayerBlockPlacement:
@@ -269,7 +273,19 @@ namespace MCSharpClient
                             // case PacketType.CloseWindow: StreamHelper.ReadBytes(Stream, 1); break; (Client->Server Only)
                             // case PacketType.WindowClick: StreamHelper.ReadBytes(Stream, 8); break; (Client->Server Only)
                             case PacketType.SetSlot: StreamHelper.ReadBytes(Stream, 5); break;
-                            case PacketType.WindowItems: StreamHelper.ReadBytes(Stream, 3); break;
+                            case PacketType.WindowItems:
+                                Stream.ReadByte(); // Window ID
+                                short c = StreamHelper.ReadShort(Stream); // Count
+                                for (int i = 0; i < c; i++) // Payload
+                                {
+                                    itemid = StreamHelper.ReadShort(Stream);
+                                    if (itemid != -1)
+                                    {
+                                        Stream.ReadByte();
+                                        StreamHelper.ReadShort(Stream);
+                                    }
+                                }
+                                break;
                             case PacketType.UpdateProgressBar: StreamHelper.ReadBytes(Stream, 5); break;
                             case PacketType.Transaction: StreamHelper.ReadBytes(Stream, 4); break;
                             case PacketType.UpdateSign:
@@ -282,10 +298,11 @@ namespace MCSharpClient
                                 break;
                             case PacketType.DisconnectKick:
                                 String reason = StreamHelper.ReadString(Stream);
-                                Debug.Warning("Received disconnect/kick packet. Reason: " + reason);
+                                // Debug.Warning("Received disconnect/kick packet. Reason: " + reason);
+                                MainSocket.Close(); // Crude, but it will work for now.
                                 break;
                             default:
-                                //Debug.Warning("Unknown packet received. [" + (int)id + "]");
+                                Debug.Warning("Unknown packet received. [" + (int)id + "]");
                                 break;
                         }
                     }

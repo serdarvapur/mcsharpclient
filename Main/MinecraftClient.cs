@@ -48,7 +48,10 @@ namespace MCSharpClient
             set 
             {
                 Private_PlayerLocation = value;
-                OnPlayerLocationChanged(this, new MinecraftClientLocationEventArgs(value));
+                if (value != null)
+                {
+                    OnPlayerLocationChanged(this, new MinecraftClientLocationEventArgs(value));
+                }
             }
         }
         public Rotation PlayerRotation

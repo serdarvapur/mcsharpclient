@@ -5,7 +5,7 @@ using System.Text;
 
 namespace MCSharpClient
 {
-    enum PacketType : byte
+    public enum PacketType : byte
     {
         KeepAlive = 0x00,
         LoginRequest = 0x01,

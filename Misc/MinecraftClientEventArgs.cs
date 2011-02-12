@@ -15,6 +15,15 @@ namespace MCSharpClient
         public MinecraftClientConnectEventArgs() : base() { }
     }
 
+    public class MinecraftClientDisconnectEventArgs : EventArgs
+    {
+        public String Reason;
+
+        public MinecraftClientDisconnectEventArgs(String Reason) : base() {
+            this.Reason = Reason;
+        }
+    }
+
     public class MinecraftClientChatEventArgs : EventArgs
     {
         public String User, Message;

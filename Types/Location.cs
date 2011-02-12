@@ -5,16 +5,14 @@ using System.Text;
 
 namespace MCSharpClient
 {
-    public class Location
+    public class Location : Vector3
     {
-        public double X, Y, Z, Stance;
 
-        public Location(double X, double Y, double Z, double Stance)
+        public float Stance;
+
+        public Location(float x, float y, float z, float stance) : base(x,y,z)
         {
-            this.X = X;
-            this.Y = Y;
-            this.Z = Z;
-            this.Stance = Stance;
+            this.Stance = stance;
         }
     }
 }

@@ -137,7 +137,10 @@ namespace MCSharpClient
             }
             catch (Exception e) { Debug.Severe(new MinecraftClientGeneralException(e)); }
 
-            Connected = false;
+            if (Connected) // Disconnected due to exception
+            {
+                Disconnect("Generic Disconnect");
+            }
         }
 
         private String Authenticate()
@@ -229,6 +232,7 @@ namespace MCSharpClient
                 {
                     this.MainSocket.Close();
                     OnDisconnectedFromServer(this, new MinecraftClientDisconnectEventArgs(reason));
+                    Connected = false;
                 }
                 catch (Exception e)
                 {
